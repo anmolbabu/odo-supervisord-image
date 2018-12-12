@@ -2,15 +2,33 @@
 set -x
 set -eo pipefail
 
+# Backup contents of source/bin directory to source backup in case of component created using source
+if [ -n  "$ODO_SRC_BACKUP_DIR" ]; then
+    mkdir -p ${ODO_SRC_BACKUP_DIR}
+    cp -rf ${ODO_S2I_SRC_BIN_PATH}/src/* ${ODO_SRC_BACKUP_DIR}/
+fi
+
+# Ensure APP_ROOT is empty before triggering assemble so as to avoid errors during assemble script execution owing to exitence of to-be copied folders
+if [ ! -z "${APP_ROOT}" ] && [ "${ODO_S2I_SRC_BIN_PATH}" != "${APP_ROOT}" ]; then
+    ls -A1 $APP_ROOT/src/ | xargs rm -rf
+fi
+
 # We now run the assembly script. If there is a custom one written in the
 # source files, we use that instead.
-if [ -f ${ODO_S2I_SRC_BIN_PATH}/.s2i/bin/assemble ]; then
-    ${ODO_S2I_SRC_BIN_PATH}/.s2i/bin/assemble
-elif [ -n "${ODO_S2I_SCRIPTS_URL}" ]; then # For S2I scripts path, use the env var set by odo if not available in component source
+if [ -f ${ODO_S2I_SRC_BIN_PATH}/src/.s2i/bin/assemble ]; then
+    ${ODO_S2I_SRC_BIN_PATH}/src/.s2i/bin/assemble
+elif [ ! -z "${ODO_S2I_SCRIPTS_URL}" ]; then # For S2I scripts path, use the env var set by odo if not available in component source
     rm -rf /opt/app-root/src/.git # ensure we don't copy git files since they can cause problems
     ${ODO_S2I_SCRIPTS_URL}/assemble
 else
     /usr/libexec/s2i/assemble
+fi
+
+# In case of component created using source, copy back the sources backed up before assemble to the ODO_S2I_SRC_BIN_PATH
+# This will be used during the next iteration for cases like watch which only propogates diff and not entire source(which is lost=moved as part of assemble script and the APP_ROOT also is cleared above)
+if [ -n  "$ODO_SRC_BACKUP_DIR" ]; then
+    rm -fr ${ODO_S2I_SRC_BIN_PATH}/src/*
+    cp -rf ${ODO_SRC_BACKUP_DIR}/* ${ODO_S2I_SRC_BIN_PATH}/src/
 fi
 
 ### 
