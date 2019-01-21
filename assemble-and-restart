@@ -11,6 +11,7 @@ if [ ! -z "${ODO_S2I_WORKING_DIR}" ] && ([ "${ODO_S2I_SRC_BIN_PATH}" != "${ODO_S
         # If it doesn't exit create it
         if [ ! -d ${ODO_SRC_BACKUP_DIR} ]; then
             mkdir -p ${ODO_SRC_BACKUP_DIR}/src
+            fix-permissions ${ODO_SRC_BACKUP_DIR}/src
         fi
 
         # Backup the sources in DestinationDir to ODO_SRC_BACKUP_DIR because the assemble script for some s2i images
@@ -72,6 +73,7 @@ if [ -n "$ODO_S2I_DEPLOYMENT_DIR" ]; then
 
     if [ ! -d "${ODO_DEPLOYMENT_BACKUP_DIR}" ]; then
         mkdir -p ${ODO_DEPLOYMENT_BACKUP_DIR}
+        fix-permissions ${ODO_DEPLOYMENT_BACKUP_DIR}
     fi
 
    rsync -a ${ODO_S2I_DEPLOYMENT_DIR}/. ${ODO_DEPLOYMENT_BACKUP_DIR}/
